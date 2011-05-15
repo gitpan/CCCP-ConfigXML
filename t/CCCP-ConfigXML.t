@@ -5,40 +5,47 @@ use Test::More;
 
     pass('*' x 10);
     
-    use_ok('XML::Bare');
-    use_ok('CCCP::ConfigXML');
-
-    my $xml_str = '    <!-- some_config.xml -->
-        <name>TestApp</name>
-        <component name="Controller::Foo">
-            <foo>bar</foo>
-        </component>
-        <model name="Baz">
-            <qux>xyzzy</qux>
-        </model>
-        
+    use_ok('CCCP::ConfigXML', as => 'singletone');
+    
+    my $foo_xml = '
         <foo>
-            <bar>x1</bar>
-            <bar>x2</bar>
-            <bar>x3</bar>
-            <bar>x4</bar>
-        </foo>
+            <name>TestApp</name>
+            <component name="Controller::Foo">
+                <foo>bar</foo>
+            </component>
+            <model name="Baz">
+                <qux>xyzzy</qux>
+            </model>
+        </foo>';
         
-        ';
-
+    my $bar_xml = '    
+        <bar>
+            <val>x1</val>
+            <val>x2</val>
+            <val>x3</val>
+            <val>x4</val>
+        </bar>';
+    
+    my $baz_xml = ' 
+         <foo>
+            <model name="Bar">
+                <qux>Go!</qux>
+            </model>
+        </foo>';
+    
     can_ok('CCCP::ConfigXML', 'new');
-    my $cnf = CCCP::ConfigXML->new(text => $xml_str);
+    my $cnf = CCCP::ConfigXML->new(text => [$foo_xml, $bar_xml]);
     isa_ok($cnf, 'CCCP::ConfigXML');
     
-    ok($cnf->name eq 'TestApp', 't1');
-    is($cnf->name('NewTestApp'),1,'t2');
-    ok($cnf->name eq 'NewTestApp', 't3');
-    ok($cnf->component->foo eq 'bar', 't4');
-    ok($cnf->component->_attr->name eq 'Controller::Foo', 't5');
+    ok($cnf->{foo}->{name}->{value} eq 'TestApp', 't1');
+    ok($cnf->{foo}->{component}->{foo}->{value} eq 'bar', 't2');
+    ok($cnf->{foo}->{model}->{qux}->{value} eq 'xyzzy', 't3');
     
-    is(UNIVERSAL::isa($cnf->foo->bar,'ARRAY'),1,'t6');
-    ok($cnf->foo->bar->[1] eq 'x2', 't7');
-
+    can_ok($cnf, 'add_text');
+    $cnf->add_text($baz_xml);
+    ok($cnf->{foo}->{model}->{qux}->{value} eq 'Go!', 't4');
+    
+    
     pass('*' x 10);
     print "\n";
     done_testing;
